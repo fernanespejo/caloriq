@@ -4,25 +4,26 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>caloriq</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&display=swap');
 
   :root {
-    --bg:        #F5F3EE;
-    --surface:   #EDEAE3;
-    --border:    #D9D5CC;
-    --text:      #1A1915;
+    --bg:        #1C1B19;
+    --surface:   #252420;
+    --surface2:  #2E2C28;
+    --border:    #3A3830;
+    --text:      #EEEBE4;
     --muted:     #7A7670;
     --accent:    #C96442;
-    --accent-lt: #F2E8E3;
-    --green:     #2D6A4F;
-    --green-lt:  #D8EFDE;
-    --amber:     #A05C00;
-    --amber-lt:  #FEF0D6;
-    --red:       #B83232;
-    --red-lt:    #FAE0E0;
+    --accent-lt: rgba(201,100,66,0.15);
+    --green:     #4CAF82;
+    --green-lt:  rgba(76,175,130,0.15);
+    --amber:     #E09D4A;
+    --amber-lt:  rgba(224,157,74,0.15);
+    --red:       #E05C5C;
+    --red-lt:    rgba(224,92,92,0.15);
     --radius:    14px;
     --radius-sm: 8px;
   }
@@ -42,30 +43,30 @@
 
   /* ── Header ─────────────────────────── */
   header {
-    padding: 18px 20px 10px;
+    padding: 18px 20px 12px;
     display: flex;
-    align-items: baseline;
-    gap: 8px;
+    align-items: center;
+    justify-content: space-between;
   }
+  .header-left { display: flex; align-items: baseline; gap: 8px; }
   header h1 {
     font-family: 'Lora', serif;
     font-size: 22px;
     font-weight: 500;
     letter-spacing: -0.3px;
+    color: var(--text);
   }
-  header span {
-    font-size: 12px;
-    color: var(--muted);
-  }
+  header span { font-size: 12px; color: var(--muted); }
 
   /* ── Input card ─────────────────────── */
   .input-card {
     margin: 0 16px;
-    background: white;
+    background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    overflow: hidden;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    overflow: visible;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+    position: relative;
   }
 
   textarea {
@@ -88,13 +89,13 @@
     align-items: center;
     padding: 8px 10px 10px;
     gap: 6px;
-    border-top: 1px solid var(--surface);
+    border-top: 1px solid var(--border);
   }
 
   .icon-btn {
     width: 36px; height: 36px;
     border: none;
-    background: var(--surface);
+    background: var(--surface2);
     border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
     cursor: pointer;
@@ -103,12 +104,10 @@
     -webkit-tap-highlight-color: transparent;
     flex-shrink: 0;
   }
-  .icon-btn:active { background: var(--border); }
+  .icon-btn:active { background: var(--border); color: var(--text); }
   .icon-btn.recording { background: var(--red-lt); color: var(--red); animation: pulse 1s infinite; }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
-
   .icon-btn svg { width: 17px; height: 17px; }
-
   #file-input { display: none; }
 
   .send-btn {
@@ -128,6 +127,38 @@
   .send-btn:disabled { opacity: 0.4; }
   .send-btn svg { width: 16px; height: 16px; }
 
+  /* ── Quick suggestions ───────────────── */
+  .suggestions-wrap {
+    padding: 8px 16px 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .suggestions-wrap::-webkit-scrollbar { display: none; }
+  .suggestions-row {
+    display: flex;
+    gap: 6px;
+    padding-bottom: 2px;
+    min-width: max-content;
+  }
+  .suggestion-chip {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 11px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    font-size: 12.5px;
+    font-weight: 400;
+    color: var(--muted);
+    cursor: pointer;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+    transition: all 0.15s;
+  }
+  .suggestion-chip:active { background: var(--surface2); color: var(--text); border-color: var(--accent); }
+  .suggestion-chip .chip-cal { color: var(--accent); font-size: 11px; font-weight: 500; }
+
   /* ── Status pills row ───────────────── */
   .pills-row {
     display: flex;
@@ -135,7 +166,6 @@
     padding: 12px 16px 4px;
     flex-wrap: wrap;
   }
-
   .pill {
     display: flex;
     align-items: center;
@@ -147,11 +177,7 @@
     line-height: 1;
     white-space: nowrap;
   }
-  .pill .dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    flex-shrink: 0;
-  }
+  .pill .dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
   .pill.green  { background: var(--green-lt);  color: var(--green); }
   .pill.green .dot  { background: var(--green); }
   .pill.amber  { background: var(--amber-lt);  color: var(--amber); }
@@ -164,16 +190,16 @@
   /* ── Toast ──────────────────────────── */
   #toast {
     position: fixed;
-    bottom: 24px;
-    left: 50%;
+    bottom: 24px; left: 50%;
     transform: translateX(-50%) translateY(80px);
-    background: var(--text);
-    color: white;
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
     padding: 10px 18px;
     border-radius: 20px;
     font-size: 13.5px;
     font-weight: 500;
-    z-index: 100;
+    z-index: 200;
     transition: transform 0.25s ease;
     pointer-events: none;
     white-space: nowrap;
@@ -181,15 +207,17 @@
     text-align: center;
   }
   #toast.show { transform: translateX(-50%) translateY(0); }
-  #toast.success { background: var(--green); }
-  #toast.error   { background: var(--red); }
+  #toast.success { background: var(--green-lt); color: var(--green); border-color: var(--green); }
+  #toast.error   { background: var(--red-lt);   color: var(--red);   border-color: var(--red); }
 
-  /* ── Toggle ─────────────────────────── */
-  .toggle-row {
+  /* ── Toggle + manual add row ─────────── */
+  .controls-row {
     display: flex;
-    padding: 16px 16px 8px;
-    gap: 6px;
+    align-items: center;
+    padding: 14px 16px 8px;
+    gap: 8px;
   }
+  .toggle-group { display: flex; gap: 6px; }
   .toggle-btn {
     padding: 6px 16px;
     border-radius: 20px;
@@ -206,8 +234,27 @@
   .toggle-btn.active {
     background: var(--text);
     border-color: var(--text);
-    color: white;
+    color: var(--bg);
   }
+  .manual-btn {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 13px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--muted);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: all 0.15s;
+  }
+  .manual-btn:active { background: var(--surface2); color: var(--text); }
+  .manual-btn svg { width: 13px; height: 13px; }
 
   /* ── Log list ───────────────────────── */
   .log-list {
@@ -215,11 +262,8 @@
     padding: 0 16px 100px;
     display: flex;
     flex-direction: column;
-    gap: 0;
   }
-
   .day-group { margin-bottom: 20px; }
-
   .day-header {
     display: flex;
     align-items: center;
@@ -234,103 +278,66 @@
     font-style: italic;
     color: var(--muted);
   }
-  .day-totals {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-  }
+  .day-totals { display: flex; gap: 6px; align-items: center; }
   .day-pill {
-    font-size: 11px;
-    font-weight: 500;
-    padding: 3px 8px;
-    border-radius: 10px;
+    font-size: 11px; font-weight: 500;
+    padding: 3px 8px; border-radius: 10px;
   }
-  .day-pill.green { background: var(--green-lt); color: var(--green); }
-  .day-pill.red   { background: var(--red-lt);   color: var(--red); }
-  .day-pill.amber { background: var(--amber-lt); color: var(--amber); }
+  .day-pill.green  { background: var(--green-lt); color: var(--green); }
+  .day-pill.red    { background: var(--red-lt);   color: var(--red); }
+  .day-pill.amber  { background: var(--amber-lt); color: var(--amber); }
   .day-pill.neutral{ background: var(--surface);  color: var(--muted); }
 
-  /* ── Entry row ──────────────────────── */
   .entry {
     display: flex;
     align-items: flex-start;
     padding: 10px 0;
-    border-bottom: 1px solid var(--surface);
+    border-bottom: 1px solid var(--surface2);
     gap: 10px;
-    -webkit-tap-highlight-color: transparent;
     cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
   }
   .entry:last-child { border-bottom: none; }
-  .entry:active { opacity: 0.7; }
-
+  .entry:active { opacity: 0.6; }
   .entry-icon {
     width: 30px; height: 30px;
-    background: var(--surface);
+    background: var(--surface2);
     border-radius: 8px;
     display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0;
-    font-size: 14px;
-    margin-top: 1px;
+    flex-shrink: 0; font-size: 14px; margin-top: 1px;
   }
-
   .entry-body { flex: 1; min-width: 0; }
   .entry-name {
-    font-size: 14px;
-    font-weight: 500;
-    line-height: 1.3;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: 14px; font-weight: 500; line-height: 1.3;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    color: var(--text);
   }
-  .entry-meta {
-    font-size: 12px;
-    color: var(--muted);
-    margin-top: 2px;
-  }
+  .entry-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .entry-macros { text-align: right; flex-shrink: 0; }
+  .entry-cal { font-size: 14px; font-weight: 500; color: var(--text); }
+  .entry-prot { font-size: 12px; color: var(--muted); margin-top: 2px; }
 
-  .entry-macros {
-    text-align: right;
-    flex-shrink: 0;
-  }
-  .entry-cal {
-    font-size: 14px;
-    font-weight: 500;
-  }
-  .entry-prot {
-    font-size: 12px;
-    color: var(--muted);
-    margin-top: 2px;
-  }
-
-  /* ── Edit modal ─────────────────────── */
+  /* ── Modal (shared) ──────────────────── */
   .modal-backdrop {
     position: fixed; inset: 0;
-    background: rgba(0,0,0,0.4);
+    background: rgba(0,0,0,0.6);
     z-index: 50;
-    display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    opacity: 0;
-    pointer-events: none;
+    display: flex; align-items: flex-end; justify-content: center;
+    opacity: 0; pointer-events: none;
     transition: opacity 0.2s;
   }
-  .modal-backdrop.open {
-    opacity: 1;
-    pointer-events: all;
-  }
+  .modal-backdrop.open { opacity: 1; pointer-events: all; }
   .modal {
-    background: white;
+    background: var(--surface);
+    border: 1px solid var(--border);
     border-radius: var(--radius) var(--radius) 0 0;
     padding: 20px 20px 36px;
-    width: 100%;
-    max-width: 540px;
+    width: 100%; max-width: 540px;
     transform: translateY(100%);
     transition: transform 0.25s ease;
-    max-height: 90dvh;
-    overflow-y: auto;
+    max-height: 90dvh; overflow-y: auto;
   }
   .modal-backdrop.open .modal { transform: translateY(0); }
-
   .modal-handle {
     width: 36px; height: 4px;
     background: var(--border);
@@ -339,58 +346,68 @@
   }
   .modal h3 {
     font-family: 'Lora', serif;
-    font-size: 17px;
-    margin-bottom: 16px;
+    font-size: 17px; margin-bottom: 16px;
+    color: var(--text);
   }
   .field-group { margin-bottom: 14px; }
   .field-group label {
-    display: block;
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--muted);
-    margin-bottom: 5px;
-    text-transform: uppercase;
-    letter-spacing: 0.4px;
+    display: block; font-size: 11px; font-weight: 500;
+    color: var(--muted); margin-bottom: 5px;
+    text-transform: uppercase; letter-spacing: 0.5px;
   }
   .field-group input {
-    width: 100%;
-    padding: 10px 12px;
+    width: 100%; padding: 11px 12px;
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
     font-family: 'DM Sans', sans-serif;
     font-size: 15px;
-    background: var(--bg);
+    background: var(--surface2);
     color: var(--text);
     outline: none;
   }
   .field-group input:focus { border-color: var(--accent); }
 
-  .modal-actions {
-    display: flex;
-    gap: 8px;
-    margin-top: 20px;
-  }
+  .modal-actions { display: flex; gap: 8px; margin-top: 20px; }
   .btn {
-    flex: 1;
-    padding: 12px;
+    flex: 1; padding: 12px;
     border-radius: var(--radius-sm);
     border: none;
     font-family: 'DM Sans', sans-serif;
-    font-size: 14px;
-    font-weight: 500;
+    font-size: 14px; font-weight: 500;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
+    transition: opacity 0.15s;
   }
-  .btn.primary { background: var(--accent); color: white; }
-  .btn.secondary { background: var(--surface); color: var(--text); }
-  .btn.danger { background: var(--red-lt); color: var(--red); }
+  .btn:active { opacity: 0.75; }
+  .btn.primary  { background: var(--accent); color: white; }
+  .btn.secondary{ background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn.danger   { background: var(--red-lt); color: var(--red); }
+
+  /* ── Manual log modal extras ─────────── */
+  .tab-row {
+    display: flex;
+    gap: 0;
+    margin-bottom: 18px;
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    padding: 3px;
+  }
+  .tab-btn {
+    flex: 1; padding: 7px;
+    border: none; border-radius: 6px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 500;
+    cursor: pointer;
+    background: transparent;
+    color: var(--muted);
+    transition: all 0.15s;
+  }
+  .tab-btn.active { background: var(--surface); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
 
   .loading-row {
     display: flex; align-items: center; gap: 8px;
-    padding: 24px 0;
-    color: var(--muted);
-    font-size: 14px;
-    justify-content: center;
+    padding: 32px 0; color: var(--muted);
+    font-size: 14px; justify-content: center;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
   .spinner {
@@ -400,46 +417,38 @@
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
   }
-
   .empty-state {
-    text-align: center;
-    padding: 48px 16px;
-    color: var(--muted);
-    font-size: 14px;
-    line-height: 1.6;
+    text-align: center; padding: 48px 16px;
+    color: var(--muted); font-size: 14px; line-height: 1.6;
   }
   .empty-state p:first-child {
-    font-family: 'Lora', serif;
-    font-style: italic;
-    font-size: 16px;
-    color: var(--text);
-    margin-bottom: 6px;
+    font-family: 'Lora', serif; font-style: italic;
+    font-size: 16px; color: var(--text); margin-bottom: 6px;
   }
 
-  /* assumptions hint below entry in confirm */
-  .assumptions-note {
-    font-size: 12px;
-    color: var(--muted);
-    font-style: italic;
-    margin-top: 4px;
-    padding: 6px 10px;
-    background: var(--surface);
-    border-radius: 6px;
+  /* photo chip */
+  #photo-chip {
+    align-items: center; gap: 5px;
+    background: var(--accent-lt);
+    border-radius: 8px; padding: 4px 8px;
+    font-size: 12px; color: var(--accent);
   }
+  #photo-chip button { border:none; background:none; cursor:pointer; color:var(--accent); font-size:14px; line-height:1; padding:0 0 0 2px; }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>caloriq</h1>
-  <span>food & weight log</span>
+  <div class="header-left">
+    <h1>caloriq</h1>
+    <span>food & weight log</span>
+  </div>
 </header>
 
 <!-- Input card -->
 <div class="input-card">
   <textarea id="text-input" placeholder="What did you eat? or log your weight…" rows="3"></textarea>
   <div class="input-actions">
-    <!-- Photo -->
     <button class="icon-btn" onclick="document.getElementById('file-input').click()" title="Attach photo">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
@@ -448,7 +457,6 @@
     </button>
     <input type="file" id="file-input" accept="image/*" capture="environment" onchange="handlePhoto(event)">
 
-    <!-- Mic -->
     <button class="icon-btn" id="mic-btn" onclick="toggleSpeech()" title="Voice input">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
@@ -458,11 +466,10 @@
       </svg>
     </button>
 
-    <!-- Photo preview chip -->
-    <div id="photo-chip" style="display:none; align-items:center; gap:5px; background:var(--accent-lt); border-radius:8px; padding:4px 8px; font-size:12px; color:var(--accent);">
+    <div id="photo-chip" style="display:none;">
       <span>📷</span>
       <span id="photo-name"></span>
-      <button onclick="clearPhoto()" style="border:none;background:none;cursor:pointer;color:var(--accent);font-size:14px;line-height:1;padding:0 0 0 2px;">×</button>
+      <button onclick="clearPhoto()">×</button>
     </div>
 
     <button class="send-btn" id="send-btn" onclick="handleSend()">
@@ -474,32 +481,62 @@
   </div>
 </div>
 
+<!-- Quick suggestions -->
+<div class="suggestions-wrap" id="suggestions-wrap" style="display:none;">
+  <div class="suggestions-row" id="suggestions-row"></div>
+</div>
+
 <!-- Status pills -->
 <div class="pills-row" id="pills-row">
   <div class="pill neutral"><span class="dot"></span><span>loading…</span></div>
 </div>
 
-<!-- Toggle -->
-<div class="toggle-row">
-  <button class="toggle-btn active" id="toggle-food" onclick="setView('food')">Food</button>
-  <button class="toggle-btn" id="toggle-weight" onclick="setView('weight')">Weight</button>
+<!-- Controls row: toggle + manual add -->
+<div class="controls-row">
+  <div class="toggle-group">
+    <button class="toggle-btn active" id="toggle-food" onclick="setView('food')">Food</button>
+    <button class="toggle-btn" id="toggle-weight" onclick="setView('weight')">Weight</button>
+  </div>
+  <button class="manual-btn" id="manual-btn" onclick="openManualModal()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+    </svg>
+    Add manually
+  </button>
 </div>
 
 <!-- Log list -->
 <div class="log-list" id="log-list">
-  <div class="loading-row"><div class="spinner"></div><span>Loading entries…</span></div>
+  <div class="loading-row"><div class="spinner"></div><span>Loading…</span></div>
 </div>
 
 <!-- Edit modal -->
-<div class="modal-backdrop" id="modal-backdrop" onclick="closeModal(event)">
-  <div class="modal" id="modal">
+<div class="modal-backdrop" id="edit-modal-backdrop" onclick="closeEditModal(event)">
+  <div class="modal">
     <div class="modal-handle"></div>
-    <h3 id="modal-title">Edit entry</h3>
-    <div id="modal-fields"></div>
+    <h3 id="edit-modal-title">Edit entry</h3>
+    <div id="edit-modal-fields"></div>
     <div class="modal-actions">
       <button class="btn danger" onclick="deleteEntry()">Delete</button>
-      <button class="btn secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn secondary" onclick="closeEditModal()">Cancel</button>
       <button class="btn primary" onclick="saveEntry()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Manual add modal -->
+<div class="modal-backdrop" id="manual-modal-backdrop" onclick="closeManualModal(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3>Add manually</h3>
+    <div class="tab-row">
+      <button class="tab-btn active" id="manual-tab-food" onclick="setManualTab('food')">Food</button>
+      <button class="tab-btn" id="manual-tab-weight" onclick="setManualTab('weight')">Weight</button>
+    </div>
+    <div id="manual-fields"></div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeManualModal()">Cancel</button>
+      <button class="btn primary" onclick="saveManual()">Add entry</button>
     </div>
   </div>
 </div>
@@ -508,14 +545,12 @@
 <div id="toast"></div>
 
 <script>
-// ── Config ───────────────────────────────────────────────────────────────────
 const API_BASE = '/api';
 const GOALS = { calories: 1500, protein: 120 };
 const WEIGHT_START = { kg: 75.9, date: '2026-05-31' };
 const WEIGHT_TARGET = { kg: 66, date: '2026-08-29' };
 const TZ = 'Europe/Tallinn';
 
-// ── State ────────────────────────────────────────────────────────────────────
 let currentView = 'food';
 let allFood = [];
 let allWeight = [];
@@ -524,11 +559,10 @@ let speechRecognition = null;
 let isRecording = false;
 let editingEntry = null;
 let editingTable = null;
+let manualTab = 'food';
 
-// ── Init ─────────────────────────────────────────────────────────────────────
-window.addEventListener('DOMContentLoaded', () => {
-  loadData();
-});
+// ── Init ──────────────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', loadData);
 
 async function loadData() {
   try {
@@ -536,42 +570,81 @@ async function loadData() {
       fetch(`${API_BASE}/log?type=food`),
       fetch(`${API_BASE}/log?type=weight`)
     ]);
-    const foodJson = await foodRes.json();
-    const weightJson = await weightRes.json();
-    allFood = foodJson.data || [];
-    allWeight = weightJson.data || [];
+    allFood   = (await foodRes.json()).data   || [];
+    allWeight = (await weightRes.json()).data || [];
     renderPills();
+    renderSuggestions();
     renderList();
-  } catch (e) {
+  } catch(e) {
     document.getElementById('log-list').innerHTML = `<div class="empty-state"><p>Couldn't load</p><span>${e.message}</span></div>`;
   }
 }
 
-// ── Pills ────────────────────────────────────────────────────────────────────
+// ── Suggestions ───────────────────────────────────────────────────────────────
+function buildFrequencyMap() {
+  const map = {};
+  allFood.forEach(e => {
+    const key = e.item.toLowerCase().trim();
+    if (!map[key]) map[key] = { item: e.item, calories: e.calories, protein: e.protein, count: 0 };
+    map[key].count++;
+  });
+  return Object.values(map).sort((a, b) => b.count - a.count);
+}
+
+function renderSuggestions() {
+  const freq = buildFrequencyMap().slice(0, 10);
+  const wrap = document.getElementById('suggestions-wrap');
+  const row  = document.getElementById('suggestions-row');
+  if (!freq.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  row.innerHTML = freq.map(f => `
+    <button class="suggestion-chip" onclick="quickAdd(${JSON.stringify(f.item).replace(/"/g,'&quot;')}, ${f.calories}, ${f.protein})">
+      ${escHtml(f.item)} <span class="chip-cal">${f.calories} kcal</span>
+    </button>`).join('');
+}
+
+async function quickAdd(item, calories, protein) {
+  const now = new Date().toISOString();
+  try {
+    const res = await fetch(`${API_BASE}/entry?table=food_log`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ item, calories, protein, logged_at: now })
+    });
+    // fallback: if direct insert not supported, use AI path
+    if (!res.ok) throw new Error('direct');
+    const json = await res.json();
+    allFood = [json.data, ...allFood];
+    renderPills(); renderSuggestions(); renderList();
+    showToast(`✓ ${item} · ${calories} kcal`, 'success');
+  } catch {
+    // fallback to AI log path
+    const input = `${item}`;
+    await sendToAPI(input, null);
+  }
+}
+
+// ── Pills ─────────────────────────────────────────────────────────────────────
 function todayStr() {
-  return new Date().toLocaleDateString('sv-SE', { timeZone: TZ }); // YYYY-MM-DD
+  return new Date().toLocaleDateString('sv-SE', { timeZone: TZ });
 }
 
 function renderPills() {
-  const today = todayStr();
+  const today     = todayStr();
   const todayFood = allFood.filter(e => e.logged_at.startsWith(today));
-  const totalCal  = todayFood.reduce((s, e) => s + (e.calories || 0), 0);
-  const totalProt = todayFood.reduce((s, e) => s + parseFloat(e.protein || 0), 0);
+  const totalCal  = todayFood.reduce((s,e) => s + (e.calories||0), 0);
+  const totalProt = todayFood.reduce((s,e) => s + parseFloat(e.protein||0), 0);
   const remCal    = GOALS.calories - totalCal;
   const remProt   = GOALS.protein  - totalProt;
 
-  // Calorie pill
-  let calClass = remCal >= 0 ? (remCal < 300 ? 'amber' : 'green') : 'red';
-  let calLabel  = remCal >= 0 ? `${remCal} kcal left` : `${Math.abs(remCal)} kcal over`;
+  const calClass = remCal >= 0 ? (remCal < 300 ? 'amber' : 'green') : 'red';
+  const calLabel = remCal >= 0 ? `${remCal} kcal left` : `${Math.abs(remCal)} over`;
+  const protClass = remProt <= 0 ? 'green' : 'amber';
+  const protLabel = remProt <= 0 ? `protein ✓` : `${remProt.toFixed(0)}g protein left`;
 
-  // Protein pill
-  let protClass = remProt <= 0 ? 'green' : (remProt < 30 ? 'amber' : 'amber');
-  let protLabel  = remProt <= 0 ? `protein ✓` : `${remProt.toFixed(0)}g protein left`;
-
-  // Weight pill — linear interpolation target for today
   const startMs  = new Date(WEIGHT_START.date).getTime();
   const endMs    = new Date(WEIGHT_TARGET.date).getTime();
-  const nowMs    = new Date().getTime();
+  const nowMs    = Date.now();
   const progress = Math.min(1, Math.max(0, (nowMs - startMs) / (endMs - startMs)));
   const targetKg = WEIGHT_START.kg + (WEIGHT_TARGET.kg - WEIGHT_START.kg) * progress;
   const latest   = allWeight[0];
@@ -579,8 +652,8 @@ function renderPills() {
   if (latest) {
     const diff = (parseFloat(latest.weight) - targetKg).toFixed(1);
     const wClass = parseFloat(latest.weight) <= targetKg ? 'green' : 'amber';
-    const sign   = diff > 0 ? '+' : '';
-    wPill = `<div class="pill ${wClass}"><span class="dot"></span><span>${latest.weight}kg (${sign}${diff} vs target)</span></div>`;
+    const sign = diff > 0 ? '+' : '';
+    wPill = `<div class="pill ${wClass}"><span class="dot"></span><span>${latest.weight}kg (${sign}${diff})</span></div>`;
   } else {
     wPill = `<div class="pill neutral"><span class="dot"></span><span>no weight logged</span></div>`;
   }
@@ -588,39 +661,33 @@ function renderPills() {
   document.getElementById('pills-row').innerHTML = `
     <div class="pill ${calClass}"><span class="dot"></span><span>${calLabel}</span></div>
     <div class="pill ${protClass}"><span class="dot"></span><span>${protLabel}</span></div>
-    ${wPill}
-  `;
+    ${wPill}`;
 }
 
-// ── List rendering ────────────────────────────────────────────────────────────
+// ── List ──────────────────────────────────────────────────────────────────────
 function setView(v) {
   currentView = v;
   document.getElementById('toggle-food').classList.toggle('active', v === 'food');
   document.getElementById('toggle-weight').classList.toggle('active', v === 'weight');
+  document.getElementById('manual-btn').textContent = '';
+  document.getElementById('manual-btn').innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add manually`;
   renderList();
+}
+
+function formatTime(iso) {
+  return new Date(iso).toLocaleTimeString('en-GB', { timeZone: TZ, hour:'2-digit', minute:'2-digit' });
+}
+function formatDate(dateStr) {
+  const today = todayStr();
+  const yest  = new Date(Date.now()-86400000).toLocaleDateString('sv-SE',{timeZone:TZ});
+  if (dateStr === today) return 'Today';
+  if (dateStr === yest)  return 'Yesterday';
+  return new Date(dateStr+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
 }
 
 function renderList() {
   const el = document.getElementById('log-list');
-  if (currentView === 'weight') {
-    renderWeightList(el);
-  } else {
-    renderFoodList(el);
-  }
-}
-
-function formatTime(isoStr) {
-  return new Date(isoStr).toLocaleTimeString('en-GB', {
-    timeZone: TZ, hour: '2-digit', minute: '2-digit'
-  });
-}
-function formatDate(dateStr) {
-  const d = new Date(dateStr + 'T12:00:00');
-  const today = todayStr();
-  const yesterday = new Date(Date.now() - 86400000).toLocaleDateString('sv-SE', { timeZone: TZ });
-  if (dateStr === today) return 'Today';
-  if (dateStr === yesterday) return 'Yesterday';
-  return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+  currentView === 'weight' ? renderWeightList(el) : renderFoodList(el);
 }
 
 function renderFoodList(el) {
@@ -628,52 +695,26 @@ function renderFoodList(el) {
     el.innerHTML = `<div class="empty-state"><p>Nothing logged yet</p><span>Type what you ate, take a photo,<br>or use voice input above.</span></div>`;
     return;
   }
-
-  // Group by day
   const groups = {};
-  allFood.forEach(e => {
-    const day = e.logged_at.slice(0, 10);
-    if (!groups[day]) groups[day] = [];
-    groups[day].push(e);
-  });
-
-  const sortedDays = Object.keys(groups).sort().reverse();
+  allFood.forEach(e => { const d = e.logged_at.slice(0,10); if(!groups[d]) groups[d]=[]; groups[d].push(e); });
+  const days = Object.keys(groups).sort().reverse();
   let html = '';
-
-  sortedDays.forEach(day => {
-    const entries = groups[day];
-    const dayCal  = entries.reduce((s, e) => s + (e.calories || 0), 0);
-    const dayProt = entries.reduce((s, e) => s + parseFloat(e.protein || 0), 0);
-    const calOk   = dayCal <= GOALS.calories;
-    const protOk  = dayProt >= GOALS.protein;
-    const calPillClass  = calOk ? 'green' : 'red';
-    const protPillClass = protOk ? 'green' : 'amber';
-
-    html += `<div class="day-group">
-      <div class="day-header">
-        <span class="day-label">${formatDate(day)}</span>
-        <div class="day-totals">
-          <span class="day-pill ${calPillClass}">${dayCal} kcal</span>
-          <span class="day-pill ${protPillClass}">${dayProt.toFixed(0)}g</span>
-        </div>
-      </div>`;
-
+  days.forEach(day => {
+    const entries  = groups[day];
+    const dayCal   = entries.reduce((s,e)=>s+(e.calories||0),0);
+    const dayProt  = entries.reduce((s,e)=>s+parseFloat(e.protein||0),0);
+    const calClass = dayCal <= GOALS.calories ? 'green' : 'red';
+    const proClass = dayProt >= GOALS.protein  ? 'green' : 'amber';
+    html += `<div class="day-group"><div class="day-header"><span class="day-label">${formatDate(day)}</span><div class="day-totals"><span class="day-pill ${calClass}">${dayCal} kcal</span><span class="day-pill ${proClass}">${dayProt.toFixed(0)}g</span></div></div>`;
     entries.forEach(e => {
       html += `<div class="entry" onclick="openEditFood('${e.id}')">
         <div class="entry-icon">🍽</div>
-        <div class="entry-body">
-          <div class="entry-name">${escHtml(e.item)}</div>
-          <div class="entry-meta">${formatTime(e.logged_at)}</div>
-        </div>
-        <div class="entry-macros">
-          <div class="entry-cal">${e.calories}</div>
-          <div class="entry-prot">${parseFloat(e.protein).toFixed(0)}g</div>
-        </div>
+        <div class="entry-body"><div class="entry-name">${escHtml(e.item)}</div><div class="entry-meta">${formatTime(e.logged_at)}</div></div>
+        <div class="entry-macros"><div class="entry-cal">${e.calories}</div><div class="entry-prot">${parseFloat(e.protein).toFixed(0)}g</div></div>
       </div>`;
     });
     html += `</div>`;
   });
-
   el.innerHTML = html;
 }
 
@@ -682,142 +723,87 @@ function renderWeightList(el) {
     el.innerHTML = `<div class="empty-state"><p>No weight entries</p><span>Log your weight by typing<br>"75.2kg" or similar.</span></div>`;
     return;
   }
-
-  // Group by day
   const groups = {};
-  allWeight.forEach(e => {
-    const day = e.logged_at.slice(0, 10);
-    if (!groups[day]) groups[day] = [];
-    groups[day].push(e);
-  });
-
+  allWeight.forEach(e => { const d = e.logged_at.slice(0,10); if(!groups[d]) groups[d]=[]; groups[d].push(e); });
   const startMs = new Date(WEIGHT_START.date).getTime();
   const endMs   = new Date(WEIGHT_TARGET.date).getTime();
-
-  const sortedDays = Object.keys(groups).sort().reverse();
+  const days = Object.keys(groups).sort().reverse();
   let html = '';
-
-  sortedDays.forEach(day => {
-    const entries = groups[day];
-    const latestEntry = entries[0];
-    const dayMs = new Date(day + 'T12:00:00').getTime();
-    const prog  = Math.min(1, Math.max(0, (dayMs - startMs) / (endMs - startMs)));
+  days.forEach(day => {
+    const entries  = groups[day];
+    const latest   = entries[0];
+    const dayMs    = new Date(day+'T12:00:00').getTime();
+    const prog     = Math.min(1,Math.max(0,(dayMs-startMs)/(endMs-startMs)));
     const targetKg = WEIGHT_START.kg + (WEIGHT_TARGET.kg - WEIGHT_START.kg) * prog;
-    const onTrack  = parseFloat(latestEntry.weight) <= targetKg;
-    const pillClass = onTrack ? 'green' : 'amber';
-
-    html += `<div class="day-group">
-      <div class="day-header">
-        <span class="day-label">${formatDate(day)}</span>
-        <div class="day-totals">
-          <span class="day-pill ${pillClass}">${onTrack ? 'on track' : 'above target'}</span>
-        </div>
-      </div>`;
-
+    const onTrack  = parseFloat(latest.weight) <= targetKg;
+    html += `<div class="day-group"><div class="day-header"><span class="day-label">${formatDate(day)}</span><div class="day-totals"><span class="day-pill ${onTrack?'green':'amber'}">${onTrack?'on track':'above target'}</span></div></div>`;
     entries.forEach(e => {
       html += `<div class="entry" onclick="openEditWeight('${e.id}')">
         <div class="entry-icon">⚖️</div>
-        <div class="entry-body">
-          <div class="entry-name">${e.weight} kg</div>
-          <div class="entry-meta">${formatTime(e.logged_at)}</div>
-        </div>
-        <div class="entry-macros">
-          <div class="entry-cal" style="font-size:12px;color:var(--muted)">target ${targetKg.toFixed(1)}kg</div>
-        </div>
+        <div class="entry-body"><div class="entry-name">${e.weight} kg</div><div class="entry-meta">${formatTime(e.logged_at)}</div></div>
+        <div class="entry-macros"><div class="entry-cal" style="font-size:12px;color:var(--muted)">target ${targetKg.toFixed(1)}</div></div>
       </div>`;
     });
     html += `</div>`;
   });
-
   el.innerHTML = html;
 }
 
-// ── Send ─────────────────────────────────────────────────────────────────────
+// ── Send (AI path) ────────────────────────────────────────────────────────────
 async function handleSend() {
   const input = document.getElementById('text-input').value.trim();
   if (!input && !pendingPhoto) return;
-
   const btn = document.getElementById('send-btn');
   btn.disabled = true;
-  btn.innerHTML = `<div class="spinner" style="border-color:rgba(255,255,255,0.3);border-top-color:white;width:14px;height:14px;"></div>`;
-
+  btn.innerHTML = `<div class="spinner" style="border-color:rgba(255,255,255,0.2);border-top-color:white;width:14px;height:14px;"></div>`;
   try {
-    const body = { input };
-    if (pendingPhoto) {
-      body.image = pendingPhoto.base64;
-      body.imageType = pendingPhoto.type;
-    }
-
-    const res = await fetch(`${API_BASE}/log`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Server error');
-
-    // Optimistically update local state
-    if (json.type === 'weight') {
-      allWeight = [...json.items, ...allWeight];
-      allWeight.sort((a, b) => new Date(b.logged_at) - new Date(a.logged_at));
-    } else {
-      allFood = [...json.items, ...allFood];
-      allFood.sort((a, b) => new Date(b.logged_at) - new Date(a.logged_at));
-    }
-
-    renderPills();
-    renderList();
-
-    // Build a readable confirmation
-    let confirmText;
-    if (json.type === 'weight') {
-      confirmText = `Logged ${json.items[0].weight}kg`;
-    } else {
-      const names = json.items.map(i => i.item).join(', ');
-      const totalCal = json.items.reduce((s, i) => s + i.calories, 0);
-      confirmText = `Logged: ${names} · ${totalCal} kcal`;
-    }
-
-    // Show assumptions if present
-    const assumptions = json.items.map(i => i.assumptions).filter(Boolean).join('; ');
-    if (assumptions) {
-      showToast(`✓ ${confirmText}`, 'success', 4000);
-      setTimeout(() => showToast(`Assumed: ${assumptions}`, 'neutral', 4000), 200);
-    } else {
-      showToast(`✓ ${confirmText}`, 'success');
-    }
-
+    await sendToAPI(input, pendingPhoto);
     document.getElementById('text-input').value = '';
     clearPhoto();
-
-  } catch (e) {
-    showToast(`Error: ${e.message}`, 'error');
   } finally {
     btn.disabled = false;
     btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>`;
   }
 }
 
-// Enter to send (desktop convenience)
-document.getElementById('text-input').addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    handleSend();
+async function sendToAPI(input, photo) {
+  const body = { input };
+  if (photo) { body.image = photo.base64; body.imageType = photo.type; }
+  const res  = await fetch(`${API_BASE}/log`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.error || 'Server error');
+
+  if (json.type === 'weight') {
+    allWeight = [...json.items, ...allWeight];
+    allWeight.sort((a,b) => new Date(b.logged_at)-new Date(a.logged_at));
+  } else {
+    allFood = [...json.items, ...allFood];
+    allFood.sort((a,b) => new Date(b.logged_at)-new Date(a.logged_at));
   }
+  renderPills(); renderSuggestions(); renderList();
+
+  const confirmText = json.type === 'weight'
+    ? `Logged ${json.items[0].weight}kg`
+    : `${json.items.map(i=>i.item).join(', ')} · ${json.items.reduce((s,i)=>s+i.calories,0)} kcal`;
+  showToast(`✓ ${confirmText}`, 'success');
+
+  const assumptions = json.items.map(i=>i.assumptions).filter(Boolean).join('; ');
+  if (assumptions) setTimeout(() => showToast(`Assumed: ${assumptions}`, 'neutral', 4000), 3200);
+}
+
+document.getElementById('text-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
 });
 
-// ── Photo ────────────────────────────────────────────────────────────────────
+// ── Photo ─────────────────────────────────────────────────────────────────────
 function handlePhoto(event) {
   const file = event.target.files[0];
   if (!file) return;
   const reader = new FileReader();
   reader.onload = () => {
-    const base64 = reader.result.split(',')[1];
-    pendingPhoto = { base64, type: file.type, name: file.name };
-    const chip = document.getElementById('photo-chip');
-    document.getElementById('photo-name').textContent = file.name.length > 16 ? file.name.slice(0, 14) + '…' : file.name;
-    chip.style.display = 'flex';
+    pendingPhoto = { base64: reader.result.split(',')[1], type: file.type, name: file.name };
+    document.getElementById('photo-name').textContent = file.name.length > 16 ? file.name.slice(0,14)+'…' : file.name;
+    document.getElementById('photo-chip').style.display = 'flex';
   };
   reader.readAsDataURL(file);
 }
@@ -827,100 +813,138 @@ function clearPhoto() {
   document.getElementById('file-input').value = '';
 }
 
-// ── Speech ───────────────────────────────────────────────────────────────────
-function toggleSpeech() {
-  if (isRecording) {
-    stopSpeech();
-  } else {
-    startSpeech();
-  }
-}
-
+// ── Speech ────────────────────────────────────────────────────────────────────
+function toggleSpeech() { isRecording ? stopSpeech() : startSpeech(); }
 function startSpeech() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SR) {
-    showToast('Voice not supported in this browser — use keyboard dictation', 'error');
-    return;
-  }
+  if (!SR) { showToast('Use keyboard dictation for voice input', 'error'); return; }
   speechRecognition = new SR();
   speechRecognition.continuous = false;
   speechRecognition.interimResults = false;
   speechRecognition.lang = 'en-US';
-
-  speechRecognition.onresult = (e) => {
-    const transcript = e.results[0][0].transcript;
+  speechRecognition.onresult = e => {
+    const t = e.results[0][0].transcript;
     const ta = document.getElementById('text-input');
-    ta.value = ta.value ? ta.value + ' ' + transcript : transcript;
+    ta.value = ta.value ? ta.value + ' ' + t : t;
     stopSpeech();
   };
-  speechRecognition.onerror = () => stopSpeech();
-  speechRecognition.onend   = () => stopSpeech();
-
+  speechRecognition.onerror = stopSpeech;
+  speechRecognition.onend   = stopSpeech;
   speechRecognition.start();
   isRecording = true;
   document.getElementById('mic-btn').classList.add('recording');
 }
-
 function stopSpeech() {
-  if (speechRecognition) {
-    try { speechRecognition.stop(); } catch(e) {}
-    speechRecognition = null;
-  }
-  isRecording = false;
+  try { speechRecognition && speechRecognition.stop(); } catch(e) {}
+  speechRecognition = null; isRecording = false;
   document.getElementById('mic-btn').classList.remove('recording');
+}
+
+// ── Manual add modal ──────────────────────────────────────────────────────────
+function openManualModal() {
+  manualTab = currentView === 'weight' ? 'weight' : 'food';
+  renderManualFields();
+  document.getElementById('manual-modal-backdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeManualModal(e) {
+  if (e && e.target !== document.getElementById('manual-modal-backdrop')) return;
+  document.getElementById('manual-modal-backdrop').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function setManualTab(tab) {
+  manualTab = tab;
+  document.getElementById('manual-tab-food').classList.toggle('active', tab === 'food');
+  document.getElementById('manual-tab-weight').classList.toggle('active', tab === 'weight');
+  renderManualFields();
+}
+function nowLocalISO() {
+  const now = new Date();
+  const off = now.getTimezoneOffset();
+  return new Date(now.getTime() - off * 60000).toISOString().slice(0, 16);
+}
+function renderManualFields() {
+  const el = document.getElementById('manual-fields');
+  if (manualTab === 'food') {
+    el.innerHTML = `
+      <div class="field-group"><label>Food item</label><input id="mf-item" placeholder="e.g. Chicken breast 150g"></div>
+      <div class="field-group"><label>Calories</label><input id="mf-cal" type="number" placeholder="350"></div>
+      <div class="field-group"><label>Protein (g)</label><input id="mf-prot" type="number" step="0.1" placeholder="30"></div>
+      <div class="field-group"><label>Time</label><input id="mf-time" type="datetime-local" value="${nowLocalISO()}"></div>`;
+  } else {
+    el.innerHTML = `
+      <div class="field-group"><label>Weight (kg)</label><input id="mf-weight" type="number" step="0.1" placeholder="74.5"></div>
+      <div class="field-group"><label>Time</label><input id="mf-time" type="datetime-local" value="${nowLocalISO()}"></div>`;
+  }
+}
+async function saveManual() {
+  const timeVal = document.getElementById('mf-time').value;
+  const logged_at = timeVal ? new Date(timeVal).toISOString() : new Date().toISOString();
+
+  try {
+    if (manualTab === 'food') {
+      const item     = document.getElementById('mf-item').value.trim();
+      const calories = parseInt(document.getElementById('mf-cal').value);
+      const protein  = parseFloat(document.getElementById('mf-prot').value);
+      if (!item || isNaN(calories) || isNaN(protein)) { showToast('Fill in all fields', 'error'); return; }
+      const res  = await fetch(`${API_BASE}/entry?table=food_log`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({item, calories, protein, logged_at}) });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error);
+      allFood = [json.data, ...allFood];
+      allFood.sort((a,b) => new Date(b.logged_at)-new Date(a.logged_at));
+      showToast(`✓ ${item} · ${calories} kcal`, 'success');
+    } else {
+      const weight = parseFloat(document.getElementById('mf-weight').value);
+      if (isNaN(weight)) { showToast('Enter a valid weight', 'error'); return; }
+      const res  = await fetch(`${API_BASE}/entry?table=weight_log`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({weight, logged_at}) });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error);
+      allWeight = [json.data, ...allWeight];
+      allWeight.sort((a,b) => new Date(b.logged_at)-new Date(a.logged_at));
+      showToast(`✓ ${weight}kg logged`, 'success');
+    }
+    renderPills(); renderSuggestions(); renderList();
+    closeManualModal();
+  } catch(e) {
+    showToast(`Error: ${e.message}`, 'error');
+  }
 }
 
 // ── Edit modal ────────────────────────────────────────────────────────────────
 function openEditFood(id) {
-  const entry = allFood.find(e => e.id === id);
-  if (!entry) return;
-  editingEntry = entry;
+  editingEntry = allFood.find(e => e.id === id); if (!editingEntry) return;
   editingTable = 'food_log';
-  document.getElementById('modal-title').textContent = 'Edit food entry';
-
-  const loggedAt = new Date(entry.logged_at).toISOString().slice(0, 16);
-  document.getElementById('modal-fields').innerHTML = `
-    <div class="field-group"><label>Food item</label><input id="ef-item" value="${escHtml(entry.item)}"></div>
-    <div class="field-group"><label>Calories</label><input id="ef-cal" type="number" value="${entry.calories}"></div>
-    <div class="field-group"><label>Protein (g)</label><input id="ef-prot" type="number" step="0.1" value="${parseFloat(entry.protein).toFixed(1)}"></div>
-    <div class="field-group"><label>Time</label><input id="ef-time" type="datetime-local" value="${loggedAt}"></div>
-  `;
-  openModal();
-}
-
-function openEditWeight(id) {
-  const entry = allWeight.find(e => e.id === id);
-  if (!entry) return;
-  editingEntry = entry;
-  editingTable = 'weight_log';
-  document.getElementById('modal-title').textContent = 'Edit weight entry';
-
-  const loggedAt = new Date(entry.logged_at).toISOString().slice(0, 16);
-  document.getElementById('modal-fields').innerHTML = `
-    <div class="field-group"><label>Weight (kg)</label><input id="ef-weight" type="number" step="0.1" value="${entry.weight}"></div>
-    <div class="field-group"><label>Time</label><input id="ef-time" type="datetime-local" value="${loggedAt}"></div>
-  `;
-  openModal();
-}
-
-function openModal() {
-  document.getElementById('modal-backdrop').classList.add('open');
+  document.getElementById('edit-modal-title').textContent = 'Edit food entry';
+  const t = new Date(editingEntry.logged_at).toISOString().slice(0,16);
+  document.getElementById('edit-modal-fields').innerHTML = `
+    <div class="field-group"><label>Food item</label><input id="ef-item" value="${escHtml(editingEntry.item)}"></div>
+    <div class="field-group"><label>Calories</label><input id="ef-cal" type="number" value="${editingEntry.calories}"></div>
+    <div class="field-group"><label>Protein (g)</label><input id="ef-prot" type="number" step="0.1" value="${parseFloat(editingEntry.protein).toFixed(1)}"></div>
+    <div class="field-group"><label>Time</label><input id="ef-time" type="datetime-local" value="${t}"></div>`;
+  document.getElementById('edit-modal-backdrop').classList.add('open');
   document.body.style.overflow = 'hidden';
 }
-function closeModal(e) {
-  if (e && e.target !== document.getElementById('modal-backdrop')) return;
-  document.getElementById('modal-backdrop').classList.remove('open');
-  document.body.style.overflow = '';
-  editingEntry = null;
-  editingTable = null;
+function openEditWeight(id) {
+  editingEntry = allWeight.find(e => e.id === id); if (!editingEntry) return;
+  editingTable = 'weight_log';
+  document.getElementById('edit-modal-title').textContent = 'Edit weight entry';
+  const t = new Date(editingEntry.logged_at).toISOString().slice(0,16);
+  document.getElementById('edit-modal-fields').innerHTML = `
+    <div class="field-group"><label>Weight (kg)</label><input id="ef-weight" type="number" step="0.1" value="${editingEntry.weight}"></div>
+    <div class="field-group"><label>Time</label><input id="ef-time" type="datetime-local" value="${t}"></div>`;
+  document.getElementById('edit-modal-backdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
 }
-
+function closeEditModal(e) {
+  if (e && e.target !== document.getElementById('edit-modal-backdrop')) return;
+  document.getElementById('edit-modal-backdrop').classList.remove('open');
+  document.body.style.overflow = '';
+  editingEntry = null; editingTable = null;
+}
 async function saveEntry() {
   if (!editingEntry) return;
-  let updates = {};
-  const timeEl = document.getElementById('ef-time');
-  if (timeEl) updates.logged_at = new Date(timeEl.value).toISOString();
-
+  const logged_at = new Date(document.getElementById('ef-time').value).toISOString();
+  let updates = { logged_at };
   if (editingTable === 'food_log') {
     updates.item     = document.getElementById('ef-item').value.trim();
     updates.calories = parseInt(document.getElementById('ef-cal').value);
@@ -928,69 +952,39 @@ async function saveEntry() {
   } else {
     updates.weight = parseFloat(document.getElementById('ef-weight').value);
   }
-
   try {
-    const res = await fetch(`${API_BASE}/entry?id=${editingEntry.id}&table=${editingTable}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(updates)
-    });
+    const res  = await fetch(`${API_BASE}/entry?id=${editingEntry.id}&table=${editingTable}`, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify(updates) });
     const json = await res.json();
     if (!res.ok) throw new Error(json.error);
-
-    if (editingTable === 'food_log') {
-      allFood = allFood.map(e => e.id === editingEntry.id ? json.data : e);
-    } else {
-      allWeight = allWeight.map(e => e.id === editingEntry.id ? json.data : e);
-    }
-
-    renderPills();
-    renderList();
-    closeModal();
-    showToast('✓ Entry updated', 'success');
-  } catch (e) {
-    showToast(`Error: ${e.message}`, 'error');
-  }
+    if (editingTable === 'food_log') allFood   = allFood.map(e   => e.id === editingEntry.id ? json.data : e);
+    else                             allWeight = allWeight.map(e => e.id === editingEntry.id ? json.data : e);
+    renderPills(); renderSuggestions(); renderList();
+    closeEditModal(); showToast('✓ Entry updated', 'success');
+  } catch(e) { showToast(`Error: ${e.message}`, 'error'); }
 }
-
 async function deleteEntry() {
-  if (!editingEntry) return;
-  if (!confirm('Delete this entry?')) return;
-
+  if (!editingEntry || !confirm('Delete this entry?')) return;
   try {
-    const res = await fetch(`${API_BASE}/entry?id=${editingEntry.id}&table=${editingTable}`, {
-      method: 'DELETE'
-    });
+    const res = await fetch(`${API_BASE}/entry?id=${editingEntry.id}&table=${editingTable}`, { method:'DELETE' });
     if (!res.ok) throw new Error('Delete failed');
-
-    if (editingTable === 'food_log') {
-      allFood = allFood.filter(e => e.id !== editingEntry.id);
-    } else {
-      allWeight = allWeight.filter(e => e.id !== editingEntry.id);
-    }
-
-    renderPills();
-    renderList();
-    closeModal();
-    showToast('Entry deleted', 'neutral');
-  } catch (e) {
-    showToast(`Error: ${e.message}`, 'error');
-  }
+    if (editingTable === 'food_log') allFood   = allFood.filter(e   => e.id !== editingEntry.id);
+    else                             allWeight = allWeight.filter(e => e.id !== editingEntry.id);
+    renderPills(); renderSuggestions(); renderList();
+    closeEditModal(); showToast('Entry deleted', 'neutral');
+  } catch(e) { showToast(`Error: ${e.message}`, 'error'); }
 }
 
 // ── Toast ─────────────────────────────────────────────────────────────────────
 let toastTimer;
 function showToast(msg, type = 'neutral', duration = 3000) {
   const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = `show ${type}`;
+  t.textContent = msg; t.className = `show ${type}`;
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { t.className = ''; }, duration);
 }
 
-// ── Utils ─────────────────────────────────────────────────────────────────────
 function escHtml(s) {
-  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 </script>
 </body>
