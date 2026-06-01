@@ -114,7 +114,7 @@ export default async function handler(req, res) {
   let claudeResult;
   try {
     const response = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
+      model: "claude-haiku-4-5-20251001",
       max_tokens: 1000,
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: messageContent }],
@@ -129,7 +129,7 @@ export default async function handler(req, res) {
     const clean = raw.replace(/```json|```/g, "").trim();
     claudeResult = JSON.parse(clean);
   } catch (err) {
-    return res.status(500).json({ error: "Claude parsing failed", detail: err.message });
+    return res.status(500).json({ error: "Claude parsing failed", detail: err.message, stack: err.stack });
   }
 
   // Insert into Supabase
