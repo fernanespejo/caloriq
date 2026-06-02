@@ -159,6 +159,7 @@ export default async function handler(req, res) {
             calories: entry.calories,
             protein: entry.protein,
             logged_at: entry.logged_at,
+            description: input || null,
           })
           .select()
           .single();

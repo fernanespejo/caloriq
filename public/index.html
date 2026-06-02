@@ -301,20 +301,29 @@
   }
   .entry:last-child { border-bottom: none; }
   .entry:active { opacity: 0.6; }
-  .entry-icon {
+  .entry-star {
     width: 30px; height: 30px;
-    background: var(--surface2);
+    background: transparent;
+    border: none;
     border-radius: 8px;
     display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; font-size: 14px; margin-top: 1px;
+    flex-shrink: 0; font-size: 18px; margin-top: 1px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 0.15s;
+    padding: 0;
   }
+  .entry-star:active { transform: scale(1.25); }
   .entry-body { flex: 1; min-width: 0; }
   .entry-name {
     font-size: 14px; font-weight: 500; line-height: 1.3;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     color: var(--text);
   }
-  .entry-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .entry-meta {
+    font-size: 12px; color: var(--muted); margin-top: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
   .entry-macros { text-align: right; flex-shrink: 0; }
   .entry-cal { font-size: 14px; font-weight: 500; color: var(--text); }
   .entry-prot { font-size: 12px; color: var(--muted); margin-top: 2px; }
@@ -582,23 +591,10 @@
 const API_BASE = '/api';
 const TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
-function loadTargets() {
-  const saved = JSON.parse(localStorage.getItem('caloriq_targets') || '{}');
-  return {
-    goals:        { calories: saved.calories ?? 1500, protein: saved.protein ?? 120 },
-    weightStart:  { kg: saved.wStartKg ?? 75.9, date: saved.wStartDate ?? '2026-05-31' },
-    weightTarget: { kg: saved.wTargetKg ?? 66,   date: saved.wTargetDate ?? '2026-08-29' },
-  };
-}
-function saveTargetsToStorage(t) {
-  localStorage.setItem('caloriq_targets', JSON.stringify({
-    calories: t.goals.calories, protein: t.goals.protein,
-    wStartKg: t.weightStart.kg, wStartDate: t.weightStart.date,
-    wTargetKg: t.weightTarget.kg, wTargetDate: t.weightTarget.date,
-  }));
-}
-
-let { goals: GOALS, weightStart: WEIGHT_START, weightTarget: WEIGHT_TARGET } = loadTargets();
+// Defaults — overwritten by Supabase on loadData()
+let GOALS         = { calories: 1500, protein: 120 };
+let WEIGHT_START  = { kg: 75.9, date: '2026-05-31' };
+let WEIGHT_TARGET = { kg: 66,   date: '2026-08-29' };
 
 let currentView = 'food';
 let allFood = [];
@@ -615,12 +611,17 @@ window.addEventListener('DOMContentLoaded', loadData);
 
 async function loadData() {
   try {
-    const [foodRes, weightRes] = await Promise.all([
+    const [foodRes, weightRes, targetsRes] = await Promise.all([
       fetch(`${API_BASE}/log?type=food`),
-      fetch(`${API_BASE}/log?type=weight`)
+      fetch(`${API_BASE}/log?type=weight`),
+      fetch(`${API_BASE}/targets`)
     ]);
     allFood   = (await foodRes.json()).data   || [];
     allWeight = (await weightRes.json()).data || [];
+
+    const targetsJson = await targetsRes.json();
+    if (targetsJson.data) applyTargets(targetsJson.data);
+
     renderPills();
     renderSuggestions();
     renderList();
@@ -629,47 +630,69 @@ async function loadData() {
   }
 }
 
-// ── Suggestions ───────────────────────────────────────────────────────────────
-function buildFrequencyMap() {
-  const map = {};
-  allFood.forEach(e => {
-    const key = e.item.toLowerCase().trim();
-    if (!map[key]) map[key] = { item: e.item, calories: e.calories, protein: e.protein, count: 0 };
-    map[key].count++;
-  });
-  return Object.values(map).sort((a, b) => b.count - a.count);
+function applyTargets(t) {
+  GOALS         = { calories: t.cal_goal, protein: parseFloat(t.prot_goal) };
+  WEIGHT_START  = { kg: parseFloat(t.w_start_kg),  date: t.w_start_date };
+  WEIGHT_TARGET = { kg: parseFloat(t.w_target_kg), date: t.w_target_date };
 }
 
+// ── Suggestions (starred items only) ─────────────────────────────────────────
 function renderSuggestions() {
-  const freq = buildFrequencyMap().slice(0, 10);
   const wrap = document.getElementById('suggestions-wrap');
   const row  = document.getElementById('suggestions-row');
-  if (!freq.length) { wrap.style.display = 'none'; return; }
+  // Deduplicate by item name, keeping the most recent entry per name
+  const seen = new Set();
+  const starred = allFood.filter(e => {
+    if (!e.starred) return false;
+    const key = e.item.toLowerCase().trim();
+    if (seen.has(key)) return false;
+    seen.add(key); return true;
+  }).slice(0, 10);
+  if (!starred.length) { wrap.style.display = 'none'; return; }
   wrap.style.display = 'block';
-  row.innerHTML = freq.map(f => `
-    <button class="suggestion-chip" onclick="quickAdd(${JSON.stringify(f.item).replace(/"/g,'&quot;')}, ${f.calories}, ${f.protein})">
-      ${escHtml(f.item)} <span class="chip-cal">${f.calories} kcal</span>
+  row.innerHTML = starred.map(f => `
+    <button class="suggestion-chip" onclick="quickAdd(${JSON.stringify(f.item).replace(/"/g,'&quot;')}, ${f.calories}, ${f.protein}, ${JSON.stringify(f.description||'').replace(/"/g,'&quot;')})">
+      ${escHtml(f.item)}
     </button>`).join('');
 }
 
-async function quickAdd(item, calories, protein) {
+async function quickAdd(item, calories, protein, description) {
   const now = new Date().toISOString();
   try {
     const res = await fetch(`${API_BASE}/entry?table=food_log`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ item, calories, protein, logged_at: now })
+      body: JSON.stringify({ item, calories, protein, logged_at: now, description: description || null })
     });
-    // fallback: if direct insert not supported, use AI path
     if (!res.ok) throw new Error('direct');
     const json = await res.json();
     allFood = [json.data, ...allFood];
     renderPills(); renderSuggestions(); renderList();
     showToast(`✓ ${item} · ${calories} kcal`, 'success');
   } catch {
-    // fallback to AI log path
-    const input = `${item}`;
-    await sendToAPI(input, null);
+    await sendToAPI(item, null);
+  }
+}
+
+async function toggleStar(id) {
+  const entry = allFood.find(e => e.id === id);
+  if (!entry) return;
+  const newVal = !entry.starred;
+  // Optimistic update
+  allFood = allFood.map(e => e.id === id ? { ...e, starred: newVal } : e);
+  renderSuggestions(); renderList();
+  try {
+    const res = await fetch(`${API_BASE}/entry?id=${id}&table=food_log`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ starred: newVal })
+    });
+    if (!res.ok) throw new Error();
+  } catch {
+    // Revert on failure
+    allFood = allFood.map(e => e.id === id ? { ...e, starred: !newVal } : e);
+    renderSuggestions(); renderList();
+    showToast('Failed to update star', 'error');
   }
 }
 
@@ -760,11 +783,13 @@ function renderFoodList(el) {
     const proClass = dayProt >= GOALS.protein  ? 'green' : 'amber';
     html += `<div class="day-group"><div class="day-header"><span class="day-label">${formatDate(day)}</span><div class="day-totals"><span class="day-pill ${calClass}">${dayCal} kcal</span><span class="day-pill ${proClass}">${dayProt.toFixed(0)}g</span></div></div>`;
     entries.forEach(e => {
+      const subtitle = e.description ? escHtml(e.description) : formatTime(e.logged_at);
+      const starIcon = e.starred ? `<span style="color:var(--accent)">★</span>` : `<span style="color:var(--muted)">☆</span>`;
       html += `<div class="entry" onclick="openEditFood('${e.id}')">
-        <div class="entry-icon">🍽</div>
-        <div class="entry-body"><div class="entry-name">${escHtml(e.item)}</div><div class="entry-meta">${formatTime(e.logged_at)}</div></div>
+        <button class="entry-star" onclick="event.stopPropagation();toggleStar('${e.id}')" title="${e.starred ? 'Unstar' : 'Star'}">${starIcon}</button>
+        <div class="entry-body"><div class="entry-name">${escHtml(e.item)}</div><div class="entry-meta">${subtitle}</div></div>
         <div class="entry-macros"><div class="entry-cal">${e.calories}</div><div class="entry-prot">${parseFloat(e.protein).toFixed(0)}g</div></div>
-        <button class="entry-relog" onclick="event.stopPropagation();quickAdd(${JSON.stringify(e.item)},${e.calories},${parseFloat(e.protein).toFixed(1)})" title="Log again">+</button>
+        <button class="entry-relog" onclick="event.stopPropagation();quickAdd(${JSON.stringify(e.item)},${e.calories},${parseFloat(e.protein).toFixed(1)},${JSON.stringify(e.description||'')})" title="Log again">+</button>
       </div>`;
     });
     html += `</div>`;
@@ -922,6 +947,7 @@ function renderManualFields() {
   if (manualTab === 'food') {
     el.innerHTML = `
       <div class="field-group"><label>Food item</label><input id="mf-item" placeholder="e.g. Chicken breast 150g"></div>
+      <div class="field-group"><label>Description <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label><input id="mf-desc" placeholder="Any notes…"></div>
       <div class="field-group"><label>Calories</label><input id="mf-cal" type="number" placeholder="350"></div>
       <div class="field-group"><label>Protein (g)</label><input id="mf-prot" type="number" step="0.1" placeholder="30"></div>
       <div class="field-group"><label>Time</label><input id="mf-time" type="datetime-local" value="${nowLocalISO()}"></div>`;
@@ -937,11 +963,12 @@ async function saveManual() {
 
   try {
     if (manualTab === 'food') {
-      const item     = document.getElementById('mf-item').value.trim();
-      const calories = parseInt(document.getElementById('mf-cal').value);
-      const protein  = parseFloat(document.getElementById('mf-prot').value);
+      const item        = document.getElementById('mf-item').value.trim();
+      const description = document.getElementById('mf-desc').value.trim() || null;
+      const calories    = parseInt(document.getElementById('mf-cal').value);
+      const protein     = parseFloat(document.getElementById('mf-prot').value);
       if (!item || isNaN(calories) || isNaN(protein)) { showToast('Fill in all fields', 'error'); return; }
-      const res  = await fetch(`${API_BASE}/entry?table=food_log`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({item, calories, protein, logged_at}) });
+      const res  = await fetch(`${API_BASE}/entry?table=food_log`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({item, description, calories, protein, logged_at}) });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
       allFood = [json.data, ...allFood];
@@ -972,6 +999,7 @@ function openEditFood(id) {
   const t = new Date(editingEntry.logged_at).toISOString().slice(0,16);
   document.getElementById('edit-modal-fields').innerHTML = `
     <div class="field-group"><label>Food item</label><input id="ef-item" value="${escHtml(editingEntry.item)}"></div>
+    <div class="field-group"><label>Description</label><input id="ef-desc" placeholder="Optional notes" value="${escHtml(editingEntry.description || '')}"></div>
     <div class="field-group"><label>Calories</label><input id="ef-cal" type="number" value="${editingEntry.calories}"></div>
     <div class="field-group"><label>Protein (g)</label><input id="ef-prot" type="number" step="0.1" value="${parseFloat(editingEntry.protein).toFixed(1)}"></div>
     <div class="field-group"><label>Time</label><input id="ef-time" type="datetime-local" value="${t}"></div>`;
@@ -1000,9 +1028,10 @@ async function saveEntry() {
   const logged_at = new Date(document.getElementById('ef-time').value).toISOString();
   let updates = { logged_at };
   if (editingTable === 'food_log') {
-    updates.item     = document.getElementById('ef-item').value.trim();
-    updates.calories = parseInt(document.getElementById('ef-cal').value);
-    updates.protein  = parseFloat(document.getElementById('ef-prot').value);
+    updates.item        = document.getElementById('ef-item').value.trim();
+    updates.description = document.getElementById('ef-desc').value.trim() || null;
+    updates.calories    = parseInt(document.getElementById('ef-cal').value);
+    updates.protein     = parseFloat(document.getElementById('ef-prot').value);
   } else {
     updates.weight = parseFloat(document.getElementById('ef-weight').value);
   }
@@ -1060,7 +1089,7 @@ function closeTargetsModal(e) {
   document.getElementById('targets-modal-backdrop').classList.remove('open');
   document.body.style.overflow = '';
 }
-function saveTargets() {
+async function saveTargets() {
   const cal   = parseInt(document.getElementById('tgt-cal').value);
   const prot  = parseFloat(document.getElementById('tgt-prot').value);
   const wsk   = parseFloat(document.getElementById('tgt-wstart').value);
@@ -1073,11 +1102,20 @@ function saveTargets() {
   GOALS         = { calories: cal, protein: prot };
   WEIGHT_START  = { kg: wsk, date: wsd };
   WEIGHT_TARGET = { kg: wtk, date: wtd };
-  saveTargetsToStorage({ goals: GOALS, weightStart: WEIGHT_START, weightTarget: WEIGHT_TARGET });
   renderPills();
   document.getElementById('targets-modal-backdrop').classList.remove('open');
   document.body.style.overflow = '';
-  showToast('✓ Targets saved', 'success');
+  try {
+    const res = await fetch(`${API_BASE}/targets`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cal_goal: cal, prot_goal: prot, w_start_kg: wsk, w_start_date: wsd, w_target_kg: wtk, w_target_date: wtd })
+    });
+    if (!res.ok) throw new Error();
+    showToast('✓ Targets saved', 'success');
+  } catch {
+    showToast('Targets updated locally (sync failed)', 'error');
+  }
 }
 </script>
 </body>
