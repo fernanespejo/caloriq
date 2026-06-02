@@ -785,7 +785,7 @@ function renderFoodList(el) {
     entries.forEach(e => {
       const qty = parseFloat(e.quantity) || 1;
       const qtyLabel = qty !== 1 ? `${qty}× · ` : '';
-      const subtitle = qtyLabel + (e.description ? escHtml(e.description) : formatTime(e.logged_at));
+      const subtitle = qtyLabel + (e.description ? escHtml(e.description) : '');
       const starIcon = e.starred ? `<span style="color:var(--accent)">★</span>` : `<span style="color:var(--muted)">☆</span>`;
       html += `<div class="entry" onclick="openEditFood('${e.id}')">
         <button class="entry-star" onclick="handleStar(event,'${e.id}')" title="${e.starred ? 'Unstar' : 'Star'}">${starIcon}</button>
