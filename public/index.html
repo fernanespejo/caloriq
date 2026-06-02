@@ -939,9 +939,12 @@ function setManualTab(tab) {
   renderManualFields();
 }
 function nowLocalISO() {
-  const now = new Date();
-  const off = now.getTimezoneOffset();
-  return new Date(now.getTime() - off * 60000).toISOString().slice(0, 16);
+  return toLocalISO(new Date());
+}
+function toLocalISO(date) {
+  const d = new Date(date);
+  const off = d.getTimezoneOffset();
+  return new Date(d.getTime() - off * 60000).toISOString().slice(0, 16);
 }
 function renderManualFields() {
   const el = document.getElementById('manual-fields');
@@ -1014,7 +1017,7 @@ function openEditFood(id) {
   editingEntry = allFood.find(e => e.id === id); if (!editingEntry) return;
   editingTable = 'food_log';
   document.getElementById('edit-modal-title').textContent = 'Edit food entry';
-  const t = new Date(editingEntry.logged_at).toISOString().slice(0,16);
+  const t = toLocalISO(editingEntry.logged_at);
   const eQty     = parseFloat(editingEntry.quantity) || 1;
   const eBaseCal = eQty > 0 ? +(editingEntry.calories / eQty).toFixed(1) : editingEntry.calories;
   const eBaseProt= eQty > 0 ? +(parseFloat(editingEntry.protein) / eQty).toFixed(2) : parseFloat(editingEntry.protein);
@@ -1045,7 +1048,7 @@ function openEditWeight(id) {
   editingEntry = allWeight.find(e => e.id === id); if (!editingEntry) return;
   editingTable = 'weight_log';
   document.getElementById('edit-modal-title').textContent = 'Edit weight entry';
-  const t = new Date(editingEntry.logged_at).toISOString().slice(0,16);
+  const t = toLocalISO(editingEntry.logged_at);
   document.getElementById('edit-modal-fields').innerHTML = `
     <div class="field-group"><label>Weight (kg)</label><input id="ef-weight" type="number" step="0.1" value="${editingEntry.weight}"></div>
     <div class="field-group"><label>Time</label><input id="ef-time" type="datetime-local" value="${t}"></div>`;
