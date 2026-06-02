@@ -186,6 +186,8 @@
   .pill.red .dot    { background: var(--red); }
   .pill.neutral{ background: var(--surface);   color: var(--muted); }
   .pill.neutral .dot{ background: var(--border); }
+  .pill { cursor: pointer; transition: opacity 0.15s; }
+  .pill:active { opacity: 0.7; }
 
   /* ── Toast ──────────────────────────── */
   #toast {
@@ -459,6 +461,11 @@
   </div>
 </header>
 
+<!-- Status pills -->
+<div class="pills-row" id="pills-row">
+  <div class="pill neutral"><span class="dot"></span><span>loading…</span></div>
+</div>
+
 <!-- Input card -->
 <div class="input-card">
   <textarea id="text-input" placeholder="What did you eat? or log your weight…" rows="3"></textarea>
@@ -498,11 +505,6 @@
 <!-- Quick suggestions -->
 <div class="suggestions-wrap" id="suggestions-wrap" style="display:none;">
   <div class="suggestions-row" id="suggestions-row"></div>
-</div>
-
-<!-- Status pills -->
-<div class="pills-row" id="pills-row">
-  <div class="pill neutral"><span class="dot"></span><span>loading…</span></div>
 </div>
 
 <!-- Controls row: toggle + manual add -->
@@ -555,15 +557,48 @@
   </div>
 </div>
 
+<!-- Targets edit modal -->
+<div class="modal-backdrop" id="targets-modal-backdrop" onclick="closeTargetsModal(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3>Edit targets</h3>
+    <div class="field-group"><label>Daily calories (kcal)</label><input id="tgt-cal" type="number" placeholder="1500"></div>
+    <div class="field-group"><label>Daily protein (g)</label><input id="tgt-prot" type="number" placeholder="120"></div>
+    <div class="field-group"><label>Starting weight (kg)</label><input id="tgt-wstart" type="number" step="0.1" placeholder="75.9"></div>
+    <div class="field-group"><label>Starting date</label><input id="tgt-wstart-date" type="date"></div>
+    <div class="field-group"><label>Target weight (kg)</label><input id="tgt-wtarget" type="number" step="0.1" placeholder="66"></div>
+    <div class="field-group"><label>Target date</label><input id="tgt-wtarget-date" type="date"></div>
+    <div class="modal-actions">
+      <button class="btn secondary" onclick="closeTargetsModal()">Cancel</button>
+      <button class="btn primary" onclick="saveTargets()">Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div id="toast"></div>
 
 <script>
 const API_BASE = '/api';
-const GOALS = { calories: 1500, protein: 120 };
-const WEIGHT_START = { kg: 75.9, date: '2026-05-31' };
-const WEIGHT_TARGET = { kg: 66, date: '2026-08-29' };
 const TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+function loadTargets() {
+  const saved = JSON.parse(localStorage.getItem('caloriq_targets') || '{}');
+  return {
+    goals:        { calories: saved.calories ?? 1500, protein: saved.protein ?? 120 },
+    weightStart:  { kg: saved.wStartKg ?? 75.9, date: saved.wStartDate ?? '2026-05-31' },
+    weightTarget: { kg: saved.wTargetKg ?? 66,   date: saved.wTargetDate ?? '2026-08-29' },
+  };
+}
+function saveTargetsToStorage(t) {
+  localStorage.setItem('caloriq_targets', JSON.stringify({
+    calories: t.goals.calories, protein: t.goals.protein,
+    wStartKg: t.weightStart.kg, wStartDate: t.weightStart.date,
+    wTargetKg: t.weightTarget.kg, wTargetDate: t.weightTarget.date,
+  }));
+}
+
+let { goals: GOALS, weightStart: WEIGHT_START, weightTarget: WEIGHT_TARGET } = loadTargets();
 
 let currentView = 'food';
 let allFood = [];
@@ -662,20 +697,24 @@ function renderPills() {
   const progress = Math.min(1, Math.max(0, (nowMs - startMs) / (endMs - startMs)));
   const targetKg = WEIGHT_START.kg + (WEIGHT_TARGET.kg - WEIGHT_START.kg) * progress;
   const latest   = allWeight[0];
-  let wPill;
+  let wClass, wLabel;
   if (latest) {
     const diff = (parseFloat(latest.weight) - targetKg).toFixed(1);
-    const wClass = parseFloat(latest.weight) <= targetKg ? 'green' : 'amber';
+    wClass = parseFloat(latest.weight) <= targetKg ? 'green' : 'amber';
     const sign = diff > 0 ? '+' : '';
-    wPill = `<div class="pill ${wClass}"><span class="dot"></span><span>${latest.weight}kg (${sign}${diff})</span></div>`;
+    wLabel = `${latest.weight}kg (${sign}${diff})`;
   } else {
-    wPill = `<div class="pill neutral"><span class="dot"></span><span>no weight logged</span></div>`;
+    wClass = 'neutral';
+    wLabel = 'no weight logged';
   }
 
-  document.getElementById('pills-row').innerHTML = `
-    <div class="pill ${calClass}"><span class="dot"></span><span>${calLabel}</span></div>
-    <div class="pill ${protClass}"><span class="dot"></span><span>${protLabel}</span></div>
-    ${wPill}`;
+  const pill = (cls, label, key) =>
+    `<div class="pill ${cls}" onclick="openTargetsModal('${key}')" title="Edit targets"><span class="dot"></span><span>${label}</span></div>`;
+
+  document.getElementById('pills-row').innerHTML =
+    pill(calClass, calLabel, 'cal') +
+    pill(protClass, protLabel, 'prot') +
+    pill(wClass, wLabel, 'weight');
 }
 
 // ── List ──────────────────────────────────────────────────────────────────────
@@ -1000,6 +1039,45 @@ function showToast(msg, type = 'neutral', duration = 3000) {
 
 function escHtml(s) {
   return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Targets modal ─────────────────────────────────────────────────────────────
+function openTargetsModal(focus) {
+  document.getElementById('tgt-cal').value         = GOALS.calories;
+  document.getElementById('tgt-prot').value        = GOALS.protein;
+  document.getElementById('tgt-wstart').value      = WEIGHT_START.kg;
+  document.getElementById('tgt-wstart-date').value = WEIGHT_START.date;
+  document.getElementById('tgt-wtarget').value     = WEIGHT_TARGET.kg;
+  document.getElementById('tgt-wtarget-date').value= WEIGHT_TARGET.date;
+  document.getElementById('targets-modal-backdrop').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  // focus the relevant field
+  const map = { cal: 'tgt-cal', prot: 'tgt-prot', weight: 'tgt-wtarget' };
+  if (map[focus]) setTimeout(() => document.getElementById(map[focus]).focus(), 250);
+}
+function closeTargetsModal(e) {
+  if (e && e.target !== document.getElementById('targets-modal-backdrop')) return;
+  document.getElementById('targets-modal-backdrop').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function saveTargets() {
+  const cal   = parseInt(document.getElementById('tgt-cal').value);
+  const prot  = parseFloat(document.getElementById('tgt-prot').value);
+  const wsk   = parseFloat(document.getElementById('tgt-wstart').value);
+  const wsd   = document.getElementById('tgt-wstart-date').value;
+  const wtk   = parseFloat(document.getElementById('tgt-wtarget').value);
+  const wtd   = document.getElementById('tgt-wtarget-date').value;
+  if ([cal, prot, wsk, wtk].some(isNaN) || !wsd || !wtd) {
+    showToast('Fill in all fields', 'error'); return;
+  }
+  GOALS         = { calories: cal, protein: prot };
+  WEIGHT_START  = { kg: wsk, date: wsd };
+  WEIGHT_TARGET = { kg: wtk, date: wtd };
+  saveTargetsToStorage({ goals: GOALS, weightStart: WEIGHT_START, weightTarget: WEIGHT_TARGET });
+  renderPills();
+  document.getElementById('targets-modal-backdrop').classList.remove('open');
+  document.body.style.overflow = '';
+  showToast('✓ Targets saved', 'success');
 }
 </script>
 </body>
