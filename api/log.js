@@ -160,6 +160,7 @@ export default async function handler(req, res) {
             protein: entry.protein,
             logged_at: entry.logged_at,
             description: input || null,
+            quantity: 1,
           })
           .select()
           .single();
