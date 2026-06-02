@@ -783,13 +783,14 @@ function renderFoodList(el) {
     const proClass = dayProt >= GOALS.protein  ? 'green' : 'amber';
     html += `<div class="day-group"><div class="day-header"><span class="day-label">${formatDate(day)}</span><div class="day-totals"><span class="day-pill ${calClass}">${dayCal} kcal</span><span class="day-pill ${proClass}">${dayProt.toFixed(0)}g</span></div></div>`;
     entries.forEach(e => {
-      const subtitle = e.description ? escHtml(e.description) : formatTime(e.logged_at);
+      const qty = parseFloat(e.quantity) || 1;
+      const qtyLabel = qty !== 1 ? `${qty}× · ` : '';
+      const subtitle = qtyLabel + (e.description ? escHtml(e.description) : formatTime(e.logged_at));
       const starIcon = e.starred ? `<span style="color:var(--accent)">★</span>` : `<span style="color:var(--muted)">☆</span>`;
       html += `<div class="entry" onclick="openEditFood('${e.id}')">
         <button class="entry-star" onclick="handleStar(event,'${e.id}')" title="${e.starred ? 'Unstar' : 'Star'}">${starIcon}</button>
         <div class="entry-body"><div class="entry-name">${escHtml(e.item)}</div><div class="entry-meta">${subtitle}</div></div>
         <div class="entry-macros"><div class="entry-cal">${e.calories}</div><div class="entry-prot">${parseFloat(e.protein).toFixed(0)}g</div></div>
-        <button class="entry-relog" onclick="handleRelog(event,${JSON.stringify(e.item)},${e.calories},${parseFloat(e.protein).toFixed(1)},${JSON.stringify(e.description||'')})" title="Log again">+</button>
       </div>`;
     });
     html += `</div>`;
