@@ -21,7 +21,7 @@ For FOOD return:
       "item": "descriptive name of the food",
       "calories": <integer estimate>,
       "protein": <decimal grams estimate>,
-      "logged_at": "<ISO 8601 datetime in Europe/Tallinn timezone>",
+      "logged_at": "<ISO 8601 datetime in the user's local timezone as provided>",
       "assumptions": "brief note on portion size assumptions"
     }
   ]
@@ -33,7 +33,7 @@ For WEIGHT return:
   "items": [
     {
       "weight": <decimal kg>,
-      "logged_at": "<ISO 8601 datetime in Europe/Tallinn timezone>",
+      "logged_at": "<ISO 8601 datetime in the user's local timezone as provided>",
       "assumptions": "any assumptions made"
     }
   ]
@@ -79,21 +79,22 @@ export default async function handler(req, res) {
   // ── POST /api/log ──────────────────────────────────────────────────────────
   if (req.method !== "POST") return res.status(405).end();
 
-  const { input, image, imageType } = req.body;
+  const { input, image, imageType, clientTime, clientTz } = req.body;
   if (!input && !image) {
     return res.status(400).json({ error: "No input provided" });
   }
 
   // Build message content for Claude
-  const now = new Date().toLocaleString("en-US", {
-    timeZone: "Europe/Tallinn",
+  const tz = clientTz || "UTC";
+  const now = new Date(clientTime || Date.now()).toLocaleString("en-US", {
+    timeZone: tz,
     dateStyle: "full",
     timeStyle: "long",
   });
 
   const textContent = {
     type: "text",
-    text: `Current date and time in Tallinn: ${now}\n\nUser input: ${input || "See the image provided."}`,
+    text: `Current date and time (user's local timezone: ${tz}): ${now}\n\nUser input: ${input || "See the image provided."}`,
   };
 
   const messageContent = image

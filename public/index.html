@@ -316,6 +316,20 @@
   .entry-macros { text-align: right; flex-shrink: 0; }
   .entry-cal { font-size: 14px; font-weight: 500; color: var(--text); }
   .entry-prot { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .entry-relog {
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; align-self: center;
+    width: 28px; height: 28px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    background: transparent;
+    color: var(--muted);
+    font-size: 18px; line-height: 1;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .entry-relog:active { background: var(--accent-lt); color: var(--accent); border-color: var(--accent); }
 
   /* ── Modal (shared) ──────────────────── */
   .modal-backdrop {
@@ -549,7 +563,7 @@ const API_BASE = '/api';
 const GOALS = { calories: 1500, protein: 120 };
 const WEIGHT_START = { kg: 75.9, date: '2026-05-31' };
 const WEIGHT_TARGET = { kg: 66, date: '2026-08-29' };
-const TZ = 'Europe/Tallinn';
+const TZ = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
 let currentView = 'food';
 let allFood = [];
@@ -711,6 +725,7 @@ function renderFoodList(el) {
         <div class="entry-icon">🍽</div>
         <div class="entry-body"><div class="entry-name">${escHtml(e.item)}</div><div class="entry-meta">${formatTime(e.logged_at)}</div></div>
         <div class="entry-macros"><div class="entry-cal">${e.calories}</div><div class="entry-prot">${parseFloat(e.protein).toFixed(0)}g</div></div>
+        <button class="entry-relog" onclick="event.stopPropagation();quickAdd(${JSON.stringify(e.item)},${e.calories},${parseFloat(e.protein).toFixed(1)})" title="Log again">+</button>
       </div>`;
     });
     html += `</div>`;
@@ -767,7 +782,7 @@ async function handleSend() {
 }
 
 async function sendToAPI(input, photo) {
-  const body = { input };
+  const body = { input, clientTime: new Date().toISOString(), clientTz: TZ };
   if (photo) { body.image = photo.base64; body.imageType = photo.type; }
   const res  = await fetch(`${API_BASE}/log`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
   const json = await res.json();
