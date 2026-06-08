@@ -129,17 +129,45 @@
 
   /* ── Quick suggestions ───────────────── */
   .suggestions-wrap {
-    padding: 8px 16px 0;
+    padding: 8px 0 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .suggestions-scroll {
+    flex: 1;
     overflow-x: auto;
     scrollbar-width: none;
   }
-  .suggestions-wrap::-webkit-scrollbar { display: none; }
+  .suggestions-scroll::-webkit-scrollbar { display: none; }
   .suggestions-row {
     display: flex;
     gap: 6px;
     padding-bottom: 2px;
+    padding-left: 16px;
+    padding-right: 4px;
     min-width: max-content;
   }
+  .suggestions-arrow {
+    flex-shrink: 0;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.7;
+    transition: opacity 0.15s;
+  }
+  .suggestions-arrow:hover { opacity: 1; }
+  .suggestions-arrow-left  { margin-left: 8px; }
+  .suggestions-arrow-right { margin-right: 8px; }
   .suggestion-chip {
     display: flex;
     align-items: center;
@@ -407,6 +435,7 @@
   .btn.primary  { background: var(--accent); color: white; }
   .btn.secondary{ background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
   .btn.danger   { background: var(--red-lt); color: var(--red); }
+  .btn.accent   { background: var(--surface2); color: var(--accent); border: 1px solid var(--accent); }
 
   /* ── Manual log modal extras ─────────── */
   .tab-row {
@@ -513,7 +542,11 @@
 
 <!-- Quick suggestions -->
 <div class="suggestions-wrap" id="suggestions-wrap" style="display:none;">
-  <div class="suggestions-row" id="suggestions-row"></div>
+  <button class="suggestions-arrow suggestions-arrow-left" id="suggestions-left" onclick="scrollSuggestions(-1)" aria-label="Scroll left">&#8249;</button>
+  <div class="suggestions-scroll" id="suggestions-scroll">
+    <div class="suggestions-row" id="suggestions-row"></div>
+  </div>
+  <button class="suggestions-arrow suggestions-arrow-right" id="suggestions-right" onclick="scrollSuggestions(1)" aria-label="Scroll right">&#8250;</button>
 </div>
 
 <!-- Controls row: toggle + manual add -->
@@ -530,6 +563,11 @@
   </button>
 </div>
 
+<!-- Log search -->
+<div id="log-search-wrap" style="padding:0 16px 8px;">
+  <input id="log-search" type="search" placeholder="Search log…" oninput="onLogSearch()" style="width:100%;box-sizing:border-box;padding:8px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;outline:none;">
+</div>
+
 <!-- Log list -->
 <div class="log-list" id="log-list">
   <div class="loading-row"><div class="spinner"></div><span>Loading…</span></div>
@@ -541,7 +579,7 @@
     <div class="modal-handle"></div>
     <h3 id="edit-modal-title">Edit entry</h3>
     <div id="edit-modal-fields"></div>
-    <div class="modal-actions">
+    <div class="modal-actions" id="edit-modal-actions">
       <button class="btn danger" onclick="deleteEntry()">Delete</button>
       <button class="btn secondary" onclick="closeEditModal()">Cancel</button>
       <button class="btn primary" onclick="saveEntry()">Save</button>
@@ -640,20 +678,29 @@ function applyTargets(t) {
 function renderSuggestions() {
   const wrap = document.getElementById('suggestions-wrap');
   const row  = document.getElementById('suggestions-row');
-  // Deduplicate by item name, keeping the most recent entry per name
-  const seen = new Set();
-  const starred = allFood.filter(e => {
-    if (!e.starred) return false;
+  // Count frequency per item name among starred entries, keep most-logged representative
+  const counts = {};
+  const reps   = {};
+  allFood.forEach(e => {
+    if (!e.starred) return;
     const key = e.item.toLowerCase().trim();
-    if (seen.has(key)) return false;
-    seen.add(key); return true;
-  }).slice(0, 10);
+    counts[key] = (counts[key] || 0) + 1;
+    if (!reps[key]) reps[key] = e;
+  });
+  const starred = Object.keys(counts)
+    .sort((a, b) => counts[b] - counts[a])
+    .map(k => reps[k]);
   if (!starred.length) { wrap.style.display = 'none'; return; }
-  wrap.style.display = 'block';
+  wrap.style.display = 'flex';
   row.innerHTML = starred.map(f => `
     <button class="suggestion-chip" onclick="quickAdd(${JSON.stringify(f.item).replace(/"/g,'&quot;')}, ${f.calories}, ${f.protein}, ${JSON.stringify(f.description||'').replace(/"/g,'&quot;')})">
       ${escHtml(f.item)}
     </button>`).join('');
+}
+
+function scrollSuggestions(dir) {
+  const el = document.getElementById('suggestions-scroll');
+  el.scrollBy({ left: dir * 160, behavior: 'smooth' });
 }
 
 async function quickAdd(item, calories, protein, description) {
@@ -761,18 +808,31 @@ function formatDate(dateStr) {
   return new Date(dateStr+'T12:00:00').toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
 }
 
+let logSearch = '';
+function onLogSearch() {
+  logSearch = document.getElementById('log-search').value.toLowerCase().trim();
+  renderList();
+}
+
 function renderList() {
   const el = document.getElementById('log-list');
+  const searchWrap = document.getElementById('log-search-wrap');
+  searchWrap.style.display = currentView === 'food' ? '' : 'none';
   currentView === 'weight' ? renderWeightList(el) : renderFoodList(el);
 }
 
 function renderFoodList(el) {
-  if (!allFood.length) {
-    el.innerHTML = `<div class="empty-state"><p>Nothing logged yet</p><span>Type what you ate, take a photo,<br>or use voice input above.</span></div>`;
+  const filtered = logSearch
+    ? allFood.filter(e => e.item.toLowerCase().includes(logSearch) || (e.description||'').toLowerCase().includes(logSearch))
+    : allFood;
+  if (!filtered.length) {
+    el.innerHTML = allFood.length
+      ? `<div class="empty-state"><p>No results</p><span>No food entries match "${escHtml(logSearch)}".</span></div>`
+      : `<div class="empty-state"><p>Nothing logged yet</p><span>Type what you ate, take a photo,<br>or use voice input above.</span></div>`;
     return;
   }
   const groups = {};
-  allFood.forEach(e => { const d = e.logged_at.slice(0,10); if(!groups[d]) groups[d]=[]; groups[d].push(e); });
+  filtered.forEach(e => { const d = e.logged_at.slice(0,10); if(!groups[d]) groups[d]=[]; groups[d].push(e); });
   const days = Object.keys(groups).sort().reverse();
   let html = '';
   days.forEach(day => {
@@ -1041,6 +1101,11 @@ function openEditFood(id) {
     </div>
     <div class="field-group"><label>Time</label><input id="ef-time" type="datetime-local" value="${t}"></div>`;
   setTimeout(updateEditCalc, 0);
+  document.getElementById('edit-modal-actions').innerHTML = `
+    <button class="btn danger" onclick="deleteEntry()">Delete</button>
+    <button class="btn secondary" onclick="closeEditModal()">Cancel</button>
+    <button class="btn accent" onclick="logAgain()">Log</button>
+    <button class="btn primary" onclick="saveEntry()">Save</button>`;
   document.getElementById('edit-modal-backdrop').classList.add('open');
   document.body.style.overflow = 'hidden';
 }
@@ -1052,6 +1117,10 @@ function openEditWeight(id) {
   document.getElementById('edit-modal-fields').innerHTML = `
     <div class="field-group"><label>Weight (kg)</label><input id="ef-weight" type="number" step="0.1" value="${editingEntry.weight}"></div>
     <div class="field-group"><label>Time</label><input id="ef-time" type="datetime-local" value="${t}"></div>`;
+  document.getElementById('edit-modal-actions').innerHTML = `
+    <button class="btn danger" onclick="deleteEntry()">Delete</button>
+    <button class="btn secondary" onclick="closeEditModal()">Cancel</button>
+    <button class="btn primary" onclick="saveEntry()">Save</button>`;
   document.getElementById('edit-modal-backdrop').classList.add('open');
   document.body.style.overflow = 'hidden';
 }
@@ -1087,6 +1156,12 @@ async function saveEntry() {
     closeEditModal(); showToast('✓ Entry updated', 'success');
   } catch(e) { showToast(`Error: ${e.message}`, 'error'); }
 }
+async function logAgain() {
+  if (!editingEntry) return;
+  closeEditModal();
+  await quickAdd(editingEntry.item, editingEntry.calories, editingEntry.protein, editingEntry.description || '');
+}
+
 async function deleteEntry() {
   if (!editingEntry || !confirm('Delete this entry?')) return;
   try {
