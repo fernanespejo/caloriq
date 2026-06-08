@@ -577,11 +577,13 @@
 <div class="modal-backdrop" id="edit-modal-backdrop" onclick="closeEditModal(event)">
   <div class="modal">
     <div class="modal-handle"></div>
-    <h3 id="edit-modal-title">Edit entry</h3>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h3 id="edit-modal-title" style="margin-bottom:0">Edit entry</h3>
+      <button onclick="closeEditModal()" style="background:none;border:none;color:var(--muted);font-size:22px;line-height:1;cursor:pointer;padding:0 0 0 12px">×</button>
+    </div>
     <div id="edit-modal-fields"></div>
     <div class="modal-actions" id="edit-modal-actions">
       <button class="btn danger" onclick="deleteEntry()">Delete</button>
-      <button class="btn secondary" onclick="closeEditModal()">Cancel</button>
       <button class="btn primary" onclick="saveEntry()">Save</button>
     </div>
   </div>
@@ -1103,8 +1105,7 @@ function openEditFood(id) {
   setTimeout(updateEditCalc, 0);
   document.getElementById('edit-modal-actions').innerHTML = `
     <button class="btn danger" onclick="deleteEntry()">Delete</button>
-    <button class="btn secondary" onclick="closeEditModal()">Cancel</button>
-    <button class="btn accent" onclick="logAgain()">Log</button>
+    <button class="btn accent" onclick="logAgain()">Log again</button>
     <button class="btn primary" onclick="saveEntry()">Save</button>`;
   document.getElementById('edit-modal-backdrop').classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -1119,7 +1120,6 @@ function openEditWeight(id) {
     <div class="field-group"><label>Time</label><input id="ef-time" type="datetime-local" value="${t}"></div>`;
   document.getElementById('edit-modal-actions').innerHTML = `
     <button class="btn danger" onclick="deleteEntry()">Delete</button>
-    <button class="btn secondary" onclick="closeEditModal()">Cancel</button>
     <button class="btn primary" onclick="saveEntry()">Save</button>`;
   document.getElementById('edit-modal-backdrop').classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -1158,8 +1158,9 @@ async function saveEntry() {
 }
 async function logAgain() {
   if (!editingEntry) return;
+  const entry = editingEntry;
   closeEditModal();
-  await quickAdd(editingEntry.item, editingEntry.calories, editingEntry.protein, editingEntry.description || '');
+  await quickAdd(entry.item, entry.calories, entry.protein, entry.description || '');
 }
 
 async function deleteEntry() {
